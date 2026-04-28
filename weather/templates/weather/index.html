@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SkyLens — Weather</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #060914;
+      --card: rgba(255,255,255,0.04);
+      --card-border: rgba(255,255,255,0.08);
+      --accent: #4fc3f7;
+      --accent2: #7c83fd;
+      --text: #f0f4ff;
+      --muted: rgba(240,244,255,0.45);
+      --glow: rgba(79,195,247,0.15);
+      --red: #ff6b6b;
+      --green: #69ffb4;
+      --yellow: #ffd166;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Animated background ── */
+    .bg-orbs {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    }
+    .orb {
+      position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.25;
+      animation: drift 14s ease-in-out infinite alternate;
+    }
+    .orb-1 { width: 500px; height: 500px; background: #1a237e; top: -150px; left: -100px; animation-delay: 0s; }
+    .orb-2 { width: 400px; height: 400px; background: #006064; top: 40%; right: -100px; animation-delay: -5s; }
+    .orb-3 { width: 300px; height: 300px; background: #311b92; bottom: -100px; left: 30%; animation-delay: -9s; }
+
+    @keyframes drift {
+      from { transform: translate(0, 0) scale(1); }
+      to   { transform: translate(30px, 40px) scale(1.08); }
+    }
+
+    /* ── Layout ── */
+    .wrapper { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+    /* ── Header ── */
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.5rem 0 2.5rem;
+    }
+    .logo {
+      font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.6rem;
+      letter-spacing: -0.5px;
+    }
+    .logo span { color: var(--accent); }
+
+    /* ── Search bar ── */
+    .search-wrap {
+      display: flex; gap: 0.75rem; margin-bottom: 2.5rem;
+      max-width: 540px; margin-inline: auto;
+    }
+    .search-wrap input {
+      flex: 1;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 0.85rem 1.25rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem; color: var(--text);
+      outline: none; transition: border-color 0.25s, box-shadow 0.25s;
+    }
+    .search-wrap input::placeholder { color: var(--muted); }
+    .search-wrap input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--glow);
+    }
+    .search-wrap button {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none; border-radius: 14px;
+      padding: 0.85rem 1.6rem;
+      font-family: 'Syne', sans-serif; font-weight: 700;
+      font-size: 0.95rem; color: #060914;
+      cursor: pointer; transition: opacity 0.2s, transform 0.15s;
+      white-space: nowrap;
+    }
+    .search-wrap button:hover { opacity: 0.88; transform: translateY(-1px); }
+    .search-wrap button:active { transform: translateY(0); }
+
+    /* ── Error ── */
+    .error-box {
+      background: rgba(255,107,107,0.1); border: 1px solid rgba(255,107,107,0.3);
+      border-radius: 14px; padding: 1rem 1.5rem;
+      color: var(--red); text-align: center; margin-bottom: 2rem;
+      font-size: 0.95rem;
+    }
+
+    /* ── Glass card ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 2rem;
+      transition: transform 0.2s;
+    }
+
+    /* ── Main weather card ── */
+    .main-card {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 2rem; margin-bottom: 1.5rem;
+      animation: fadeUp 0.5s ease;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .city-name {
+      font-family: 'Syne', sans-serif; font-weight: 800;
+      font-size: 2.2rem; line-height: 1.1; margin-bottom: 0.3rem;
+    }
+    .country-badge {
+      display: inline-block;
+      background: rgba(79,195,247,0.15);
+      color: var(--accent);
+      font-size: 0.8rem; font-weight: 500;
+      padding: 0.2rem 0.7rem; border-radius: 999px;
+      margin-bottom: 1.5rem;
+    }
+
+    .temp-display {
+      font-family: 'Syne', sans-serif; font-weight: 800;
+      font-size: 5.5rem; line-height: 1;
+      background: linear-gradient(135deg, var(--text), var(--accent));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .temp-unit { font-size: 2.5rem; }
+
+    .weather-desc {
+      font-size: 1.15rem; color: var(--muted); margin-top: 0.5rem;
+      text-transform: capitalize;
+    }
+    .feels-like { font-size: 0.9rem; color: var(--muted); margin-top: 0.25rem; }
+
+    /* weather icon big */
+    .weather-icon-wrap {
+      display: flex; align-items: center; justify-content: center;
+    }
+    .weather-icon-wrap img {
+      width: 130px; height: 130px;
+      filter: drop-shadow(0 0 30px var(--glow));
+      animation: float 3.5s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-12px); }
+    }
+
+    /* ── Stat pills ── */
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;
+      margin-bottom: 1.5rem; animation: fadeUp 0.6s ease 0.1s both;
+    }
+    .stat-card {
+      background: var(--card); border: 1px solid var(--card-border);
+      border-radius: 18px; padding: 1.2rem 1rem; text-align: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    }
+    .stat-icon { font-size: 1.6rem; margin-bottom: 0.4rem; }
+    .stat-value {
+      font-family: 'Syne', sans-serif; font-weight: 700;
+      font-size: 1.3rem; color: var(--text);
+    }
+    .stat-label { font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem; }
+
+    /* ── Min/Max strip ── */
+    .minmax-strip {
+      display: flex; gap: 1rem; margin-bottom: 1.5rem;
+      animation: fadeUp 0.6s ease 0.15s both;
+    }
+    .minmax-card {
+      flex: 1; background: var(--card); border: 1px solid var(--card-border);
+      border-radius: 18px; padding: 1rem 1.5rem;
+      display: flex; align-items: center; gap: 0.75rem;
+    }
+    .minmax-icon { font-size: 1.4rem; }
+    .minmax-label { font-size: 0.8rem; color: var(--muted); }
+    .minmax-val {
+      font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.4rem;
+    }
+    .minmax-val.hot { color: var(--red); }
+    .minmax-val.cold { color: var(--accent); }
+
+    /* ── Forecast ── */
+    .section-title {
+      font-family: 'Syne', sans-serif; font-weight: 700;
+      font-size: 1.1rem; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 1.5px;
+      margin-bottom: 1rem;
+    }
+    .forecast-grid {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem;
+      animation: fadeUp 0.6s ease 0.2s both;
+    }
+    .forecast-card {
+      background: var(--card); border: 1px solid var(--card-border);
+      border-radius: 20px; padding: 1.25rem 0.75rem;
+      text-align: center; transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .forecast-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 35px rgba(0,0,0,0.35);
+      border-color: rgba(79,195,247,0.25);
+    }
+    .forecast-date {
+      font-size: 0.78rem; color: var(--muted);
+      margin-bottom: 0.5rem; font-weight: 500;
+    }
+    .forecast-icon img { width: 52px; height: 52px; }
+    .forecast-desc { font-size: 0.75rem; color: var(--muted); margin: 0.3rem 0; }
+    .forecast-temps {
+      display: flex; justify-content: center; gap: 0.5rem;
+      font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.9rem;
+    }
+    .forecast-temps .hi { color: var(--red); }
+    .forecast-temps .lo { color: var(--accent); }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center; padding: 4rem 2rem;
+      animation: fadeUp 0.5s ease;
+    }
+    .empty-state .big-icon { font-size: 5rem; margin-bottom: 1rem; opacity: 0.6; }
+    .empty-state h2 {
+      font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800;
+      margin-bottom: 0.5rem;
+    }
+    .empty-state p { color: var(--muted); font-size: 1rem; }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .main-card { grid-template-columns: 1fr; }
+      .weather-icon-wrap { display: none; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .forecast-grid { grid-template-columns: repeat(3, 1fr); }
+      .temp-display { font-size: 4rem; }
+    }
+    @media (max-width: 480px) {
+      .forecast-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center; color: var(--muted);
+      font-size: 0.8rem; margin-top: 3rem;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<div class="bg-orbs">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+
+<div class="wrapper">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">Sky<span>Lens</span></div>
+    <div style="font-size:0.8rem; color:var(--muted);">Powered by OpenWeatherMap</div>
+  </header>
+
+  <!-- Search -->
+  <form method="GET" action="/">
+    <div class="search-wrap">
+      <input
+        type="text" name="city"
+        placeholder="Search city — e.g. Mumbai, London, Tokyo…"
+        value="{{ city }}"
+        autocomplete="off"
+      />
+      <button type="submit">Search 🔍</button>
+    </div>
+  </form>
+
+  <!-- Error -->
+  {% if error %}
+  <div class="error-box">{{ error }}</div>
+  {% endif %}
+
+  <!-- Main weather -->
+  {% if weather %}
+
+  <!-- Hero card -->
+  <div class="main-card card">
+    <div>
+      <div class="city-name">{{ weather.city }}</div>
+      <div class="country-badge">🌍 {{ weather.country }}</div>
+      <div class="temp-display">{{ weather.temp }}<span class="temp-unit">°C</span></div>
+      <div class="weather-desc">{{ weather.description }}</div>
+      <div class="feels-like">Feels like {{ weather.feels_like }}°C</div>
+    </div>
+    <div class="weather-icon-wrap">
+      <img
+        src="https://openweathermap.org/img/wn/{{ weather.icon }}@4x.png"
+        alt="{{ weather.description }}"
+      />
+    </div>
+  </div>
+
+  <!-- Min / Max -->
+  <div class="minmax-strip">
+    <div class="minmax-card">
+      <span class="minmax-icon">🔥</span>
+      <div>
+        <div class="minmax-label">High</div>
+        <div class="minmax-val hot">{{ weather.temp_max }}°C</div>
+      </div>
+    </div>
+    <div class="minmax-card">
+      <span class="minmax-icon">❄️</span>
+      <div>
+        <div class="minmax-label">Low</div>
+        <div class="minmax-val cold">{{ weather.temp_min }}°C</div>
+      </div>
+    </div>
+    <div class="minmax-card">
+      <span class="minmax-icon">🌅</span>
+      <div>
+        <div class="minmax-label">Sunrise / Sunset</div>
+        <div class="minmax-val" style="font-size:1rem;">
+          {{ weather.sunrise|date:"H:i" }} / {{ weather.sunset|date:"H:i" }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon">💧</div>
+      <div class="stat-value">{{ weather.humidity }}%</div>
+      <div class="stat-label">Humidity</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">💨</div>
+      <div class="stat-value">{{ weather.wind_speed }} km/h</div>
+      <div class="stat-label">Wind Speed</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🌫️</div>
+      <div class="stat-value">{{ weather.visibility }} km</div>
+      <div class="stat-label">Visibility</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">📊</div>
+      <div class="stat-value">{{ weather.pressure }} hPa</div>
+      <div class="stat-label">Pressure</div>
+    </div>
+  </div>
+
+  <!-- 5-day forecast -->
+  {% if forecast %}
+  <div class="section-title">5-Day Forecast</div>
+  <div class="forecast-grid">
+    {% for day in forecast %}
+    <div class="forecast-card">
+      <div class="forecast-date">{{ day.date }}</div>
+      <div class="forecast-icon">
+        <img src="https://openweathermap.org/img/wn/{{ day.icon }}@2x.png" alt="{{ day.description }}"/>
+      </div>
+      <div class="forecast-desc">{{ day.description }}</div>
+      <div class="forecast-temps">
+        <span class="hi">{{ day.temp_max }}°</span>
+        <span style="color:var(--muted);">/</span>
+        <span class="lo">{{ day.temp_min }}°</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% elif not error %}
+  <!-- Empty state -->
+  <div class="empty-state">
+    <div class="big-icon">🌤️</div>
+    <h2>What's the weather like?</h2>
+    <p>Enter any city name above to get live weather data and a 5-day forecast.</p>
+  </div>
+  {% endif %}
+
+  <footer>
+    <p>Built with Django · Data from <a href="https://openweathermap.org" target="_blank">OpenWeatherMap</a></p>
+  </footer>
+
+</div>
+</body>
+</html>
