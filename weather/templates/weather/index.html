@@ -170,9 +170,16 @@
 
     /* ── Stat pills ── */
     .stats-grid {
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+      gap: 1rem;
       margin-bottom: 1.5rem; animation: fadeUp 0.6s ease 0.1s both;
     }
+    .stat-card.stat-aqi.aqi-1 { border-color: rgba(105, 255, 180, 0.35); }
+    .stat-card.stat-aqi.aqi-2 { border-color: rgba(255, 209, 102, 0.35); }
+    .stat-card.stat-aqi.aqi-3 { border-color: rgba(255, 179, 71, 0.4); }
+    .stat-card.stat-aqi.aqi-4 { border-color: rgba(255, 107, 107, 0.4); }
+    .stat-card.stat-aqi.aqi-5 { border-color: rgba(199, 125, 255, 0.45); }
     .stat-card {
       background: var(--card); border: 1px solid var(--card-border);
       border-radius: 18px; padding: 1.2rem 1rem; text-align: center;
@@ -332,23 +339,23 @@
     <div class="minmax-card">
       <span class="minmax-icon">🔥</span>
       <div>
-        <div class="minmax-label">High</div>
+        <div class="minmax-label">Today's high</div>
         <div class="minmax-val hot">{{ weather.temp_max }}°C</div>
       </div>
     </div>
     <div class="minmax-card">
       <span class="minmax-icon">❄️</span>
       <div>
-        <div class="minmax-label">Low</div>
+        <div class="minmax-label">Today's low</div>
         <div class="minmax-val cold">{{ weather.temp_min }}°C</div>
       </div>
     </div>
     <div class="minmax-card">
       <span class="minmax-icon">🌅</span>
       <div>
-        <div class="minmax-label">Sunrise / Sunset</div>
+        <div class="minmax-label">Sunrise · Sunset (local)</div>
         <div class="minmax-val" style="font-size:1rem;">
-          {{ weather.sunrise|date:"H:i" }} / {{ weather.sunset|date:"H:i" }}
+          {{ weather.sunrise_local }} · {{ weather.sunset_local }}
         </div>
       </div>
     </div>
@@ -367,7 +374,7 @@
       <div class="stat-label">Wind Speed</div>
     </div>
     <div class="stat-card">
-      <div class="stat-icon">🌫️</div>
+      <div class="stat-icon">👁</div>
       <div class="stat-value">{{ weather.visibility }} km</div>
       <div class="stat-label">Visibility</div>
     </div>
@@ -375,6 +382,11 @@
       <div class="stat-icon">📊</div>
       <div class="stat-value">{{ weather.pressure }} hPa</div>
       <div class="stat-label">Pressure</div>
+    </div>
+    <div class="stat-card stat-aqi {% if weather.aqi %}aqi-{{ weather.aqi }}{% endif %}">
+      <div class="stat-icon">🏭</div>
+      <div class="stat-value">{% if weather.aqi is not None %}{{ weather.aqi }}{% else %}—{% endif %}</div>
+      <div class="stat-label">{% if weather.aqi_label %}AQI · {{ weather.aqi_label }}{% else %}Air quality{% endif %}</div>
     </div>
   </div>
 
