@@ -1,9 +1,5 @@
 #!/bin/bash
-
 set -e
 
-#  python manage.py loaddata permissions asset_categories fields roles &&
-
 python manage.py collectstatic --noinput &&
-
-daphne -b 0.0.0.0 -p $PORT chatproject.asgi:application
+daphne -b 0.0.0.0 -p ${PORT:-8000} weatherapp.asgi:application
