@@ -2,4 +2,4 @@
 set -e
 
 python manage.py collectstatic --noinput &&
-daphne -b 0.0.0.0 -p ${PORT:-8000} weatherapp.asgi:application
+exec gunicorn weatherapp.wsgi:application --bind 0.0.0.0:${PORT:-8000}
